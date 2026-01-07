@@ -1,60 +1,86 @@
-// トレーニング入力フォームの型
-export interface TrainingInput {
-  date: string;
-  participants: number;
-  duration: number; // 分
-  location: string;
-  groundSize: string;
-  theme: string;
-  preferences: string; // 指導者のこだわり・前提条件
-}
-
-// トレーニングメニュー項目の型
-export interface TrainingMenuItem {
-  name: string;
-  duration: number; // 分
-  description: string;
-  gridSize?: string;
-  playerArrangement?: string;
-  rules: string[];
-  coachingPoints: string[];
-}
-
-// AIからの提案1件の型
-export interface TrainingProposal {
-  id: string;
+// 練習メニュー入力の型
+export interface TrainingMenuInput {
   title: string;
-  overview: string;
-  warmup: TrainingMenuItem;
-  mainTraining: TrainingMenuItem[];
-  cooldown: TrainingMenuItem;
-  totalDuration: number;
-  keyPoints: string[];
+  targetAge: string;
+  players: string;
+  difficulty: number; // 1-5
+  courtSize: string;
+  duration: string;
+  organize: string; // オーガナイズ（ルール・配置）
+  keyFactors: string; // キーファクター
+  coachingPoints: string; // 留意点・コーチングポイント
+  memo: string;
+  notes: string; // 備考
+  // 図解用の追加情報
+  graphicDescription: string; // 図解の説明（AIが解析）
 }
 
-// API レスポンスの型
-export interface GenerateResponse {
-  proposals: TrainingProposal[];
+// 選手の配置情報
+export interface PlayerPosition {
+  id: string;
+  x: number; // 0-100 (%)
+  y: number; // 0-100 (%)
+  team: "attack" | "defense" | "neutral";
+  label?: string;
+  hasBall?: boolean;
 }
 
-// テーマの選択肢
-export const THEME_OPTIONS = [
-  { value: "attack", label: "攻撃（シュート・崩し）" },
-  { value: "defense", label: "守備（プレス・カバー）" },
-  { value: "buildup", label: "ビルドアップ" },
-  { value: "passing", label: "パス・コントロール" },
-  { value: "dribble", label: "ドリブル・1対1" },
-  { value: "goalkeeper", label: "ゴールキーパー" },
-  { value: "physical", label: "フィジカル・体力" },
-  { value: "game", label: "ゲーム形式" },
+// 矢印（動きの方向）
+export interface Arrow {
+  id: string;
+  fromX: number;
+  fromY: number;
+  toX: number;
+  toY: number;
+  type: "move" | "pass" | "dribble";
+  label?: string;
+}
+
+// マーカー/コーン
+export interface Marker {
+  id: string;
+  x: number;
+  y: number;
+  type: "cone" | "marker" | "goal" | "flag";
+}
+
+// 図解データ
+export interface GraphicData {
+  players: PlayerPosition[];
+  arrows: Arrow[];
+  markers: Marker[];
+  courtWidth: number;
+  courtHeight: number;
+}
+
+// 完成した練習メニューデータ
+export interface TrainingMenu {
+  input: TrainingMenuInput;
+  graphic: GraphicData;
+}
+
+// APIレスポンス
+export interface GenerateGraphicResponse {
+  graphic: GraphicData;
+}
+
+// 難易度の選択肢
+export const DIFFICULTY_OPTIONS = [
+  { value: 1, label: "★☆☆☆☆", description: "とても簡単" },
+  { value: 2, label: "★★☆☆☆", description: "簡単" },
+  { value: 3, label: "★★★☆☆", description: "普通" },
+  { value: 4, label: "★★★★☆", description: "難しい" },
+  { value: 5, label: "★★★★★", description: "とても難しい" },
 ] as const;
 
-// グラウンドサイズの選択肢
-export const GROUND_SIZE_OPTIONS = [
-  { value: "full", label: "フルコート（68m×105m）" },
-  { value: "half", label: "ハーフコート" },
-  { value: "quarter", label: "クォーターコート" },
-  { value: "small", label: "小グラウンド（30m×40m程度）" },
-  { value: "futsal", label: "フットサルコート" },
-  { value: "gym", label: "体育館" },
+// 対象年齢の選択肢
+export const AGE_OPTIONS = [
+  "U-6",
+  "U-7",
+  "U-8",
+  "U-9",
+  "U-10",
+  "U-11",
+  "U-12",
+  "U-13〜",
 ] as const;

@@ -3,8 +3,8 @@
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import TrainingForm from "@/components/TrainingForm";
-import ProposalList from "@/components/ProposalList";
-import { TrainingInput, TrainingProposal, GenerateResponse } from "@/lib/types";
+import CourtGraphic from "@/components/CourtGraphic";
+import { TrainingMenuInput, GraphicData, GenerateGraphicResponse } from "@/lib/types";
 
 // PDFDownloadButtonは動的インポート（SSR無効）
 const PDFDownloadButton = dynamic(
@@ -12,18 +12,16 @@ const PDFDownloadButton = dynamic(
   { ssr: false }
 );
 
-type ViewState = "form" | "proposals" | "pdf";
+type ViewState = "form" | "preview";
 
 export default function Home() {
   const [viewState, setViewState] = useState<ViewState>("form");
   const [isLoading, setIsLoading] = useState(false);
-  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [proposals, setProposals] = useState<TrainingProposal[]>([]);
-  const [selectedProposal, setSelectedProposal] = useState<TrainingProposal | null>(null);
-  const [inputData, setInputData] = useState<TrainingInput | null>(null);
+  const [inputData, setInputData] = useState<TrainingMenuInput | null>(null);
+  const [graphicData, setGraphicData] = useState<GraphicData | null>(null);
 
-  const handleSubmit = async (data: TrainingInput) => {
+  const handleSubmit = async (data: TrainingMenuInput) => {
     setIsLoading(true);
     setError(null);
     setInputData(data);
@@ -40,10 +38,9 @@ export default function Home() {
         throw new Error(errorData.error || "エラーが発生しました");
       }
 
-      const result: GenerateResponse = await response.json();
-      setProposals(result.proposals);
-      setSelectedProposal(null);
-      setViewState("proposals");
+      const result: GenerateGraphicResponse = await response.json();
+      setGraphicData(result.graphic);
+      setViewState("preview");
     } catch (err) {
       setError(err instanceof Error ? err.message : "エラーが発生しました");
     } finally {
@@ -51,40 +48,20 @@ export default function Home() {
     }
   };
 
-  const handleSelectProposal = (proposal: TrainingProposal) => {
-    setSelectedProposal(proposal);
-  };
-
-  const handleGeneratePDF = () => {
-    setIsGeneratingPDF(true);
-    setViewState("pdf");
-  };
-
   const handleBack = () => {
     setViewState("form");
-    setProposals([]);
-    setSelectedProposal(null);
-  };
-
-  const handleBackToProposals = () => {
-    setViewState("proposals");
-    setIsGeneratingPDF(false);
-  };
-
-  const handlePDFComplete = () => {
-    setIsGeneratingPDF(false);
   };
 
   return (
     <main className="min-h-screen py-8 px-4">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-4xl mx-auto">
         {/* ヘッダー */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            サッカートレーニング計画ツール
+            サッカートレーニング図解ツール
           </h1>
           <p className="text-gray-600">
-            AIがジュニアサッカーの練習メニューを提案し、A4 PDFを自動生成します
+            練習メニューを入力すると、AIが図解付きA4 PDFを自動生成します
           </p>
         </div>
 
@@ -97,81 +74,98 @@ export default function Home() {
 
         {/* 入力フォーム */}
         {viewState === "form" && (
-          <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-md p-6">
+          <div className="bg-white rounded-xl shadow-md p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4">
-              練習条件を入力
+              練習メニュー入力
             </h2>
             <TrainingForm onSubmit={handleSubmit} isLoading={isLoading} />
           </div>
         )}
 
-        {/* 提案一覧 */}
-        {viewState === "proposals" && inputData && (
-          <ProposalList
-            proposals={proposals}
-            selectedProposal={selectedProposal}
-            onSelect={handleSelectProposal}
-            onGeneratePDF={handleGeneratePDF}
-            onBack={handleBack}
-            inputData={inputData}
-            isGeneratingPDF={isGeneratingPDF}
-          />
-        )}
+        {/* プレビュー画面 */}
+        {viewState === "preview" && inputData && graphicData && (
+          <div className="space-y-6">
+            {/* 戻るボタン */}
+            <button
+              onClick={handleBack}
+              className="text-gray-600 hover:text-gray-800 flex items-center gap-1"
+            >
+              ← 入力画面に戻る
+            </button>
 
-        {/* PDF生成・ダウンロード画面 */}
-        {viewState === "pdf" && selectedProposal && inputData && (
-          <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-md p-8 text-center">
-            <div className="mb-6">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg
-                  className="w-8 h-8 text-green-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-              </div>
-              <h2 className="text-xl font-bold text-gray-900 mb-2">
-                PDFを生成しました
+            {/* プレビュー */}
+            <div className="bg-white rounded-xl shadow-md p-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-4">
+                【練習メニュー：{inputData.title}】
               </h2>
-              <p className="text-gray-600 mb-1">{selectedProposal.title}</p>
-              <p className="text-sm text-gray-500">
-                {inputData.date} / {inputData.participants}人 / {selectedProposal.totalDuration}分
-              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* 左側：情報 */}
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <span className="font-bold text-gray-500">対象年齢：</span>
+                      <span>{inputData.targetAge}〜</span>
+                    </div>
+                    <div>
+                      <span className="font-bold text-gray-500">人数：</span>
+                      <span>{inputData.players || "-"}</span>
+                    </div>
+                    <div>
+                      <span className="font-bold text-gray-500">コートサイズ：</span>
+                      <span>{inputData.courtSize || "-"}</span>
+                    </div>
+                    <div>
+                      <span className="font-bold text-gray-500">時間：</span>
+                      <span>{inputData.duration || "-"}</span>
+                    </div>
+                  </div>
+
+                  {inputData.organize && (
+                    <div>
+                      <h3 className="font-bold text-gray-700 mb-1">オーガナイズ</h3>
+                      <p className="text-sm text-gray-600 whitespace-pre-wrap">
+                        {inputData.organize}
+                      </p>
+                    </div>
+                  )}
+
+                  {inputData.keyFactors && (
+                    <div className="bg-yellow-50 p-3 rounded">
+                      <h3 className="font-bold text-yellow-800 mb-1">キーファクター</h3>
+                      <p className="text-sm text-yellow-700 whitespace-pre-wrap">
+                        {inputData.keyFactors}
+                      </p>
+                    </div>
+                  )}
+
+                  {inputData.coachingPoints && (
+                    <div className="bg-blue-50 p-3 rounded">
+                      <h3 className="font-bold text-blue-800 mb-1">
+                        留意点・コーチングポイント
+                      </h3>
+                      <p className="text-sm text-blue-700 whitespace-pre-wrap">
+                        {inputData.coachingPoints}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* 右側：図解 */}
+                <div>
+                  <h3 className="font-bold text-gray-700 mb-2 text-center">
+                    グラフィック
+                  </h3>
+                  <div className="flex justify-center">
+                    <CourtGraphic data={graphicData} width={350} height={350} />
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-4">
-              <div className="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors cursor-pointer">
-                <PDFDownloadButton
-                  proposal={selectedProposal}
-                  inputData={inputData}
-                  onComplete={handlePDFComplete}
-                />
-              </div>
-
-              <div>
-                <button
-                  onClick={handleBackToProposals}
-                  className="text-gray-600 hover:text-gray-800 text-sm"
-                >
-                  ← 提案一覧に戻る
-                </button>
-              </div>
-
-              <div>
-                <button
-                  onClick={handleBack}
-                  className="text-gray-500 hover:text-gray-700 text-sm"
-                >
-                  新しい条件で作成する
-                </button>
-              </div>
+            {/* ダウンロードボタン */}
+            <div className="text-center">
+              <PDFDownloadButton input={inputData} graphic={graphicData} />
             </div>
           </div>
         )}

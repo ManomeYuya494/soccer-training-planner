@@ -1,39 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getOpenAIClient, SYSTEM_PROMPT } from "@/lib/openai";
-import { TrainingInput, GenerateResponse, THEME_OPTIONS, GROUND_SIZE_OPTIONS } from "@/lib/types";
+import { getOpenAIClient, GRAPHIC_SYSTEM_PROMPT } from "@/lib/openai";
+import { TrainingMenuInput, GenerateGraphicResponse } from "@/lib/types";
 
 export async function POST(request: NextRequest) {
   try {
-    const body: TrainingInput = await request.json();
-
-    // テーマとグラウンドサイズのラベルを取得
-    const themeLabel = THEME_OPTIONS.find((t) => t.value === body.theme)?.label || body.theme;
-    const groundSizeLabel = GROUND_SIZE_OPTIONS.find((g) => g.value === body.groundSize)?.label || body.groundSize;
+    const body: TrainingMenuInput = await request.json();
 
     // ユーザーメッセージを構築
     const userMessage = `
-以下の条件で、ジュニアサッカー（小学生）の練習メニューを3パターン提案してください。
+以下のサッカートレーニングの図解データを生成してください。
 
-## 練習条件
-- 日付: ${body.date}
-- 参加人数: ${body.participants}人
-- 練習時間: ${body.duration}分
-- 場所: ${body.location || "未指定"}
-- グラウンドサイズ: ${groundSizeLabel}
-- テーマ: ${themeLabel}
-${body.preferences ? `- 指導者からの要望: ${body.preferences}` : ""}
+## トレーニング情報
+- タイトル: ${body.title}
+- コートサイズ: ${body.courtSize || "指定なし"}
+- 人数: ${body.players || "指定なし"}
+- オーガナイズ: ${body.organize || "指定なし"}
 
-必ずJSON形式で出力してください。
+## 図解の説明
+${body.graphicDescription}
+
+上記の説明に基づいて、選手の配置、マーカー、矢印などの情報をJSON形式で出力してください。
 `;
 
     const openai = getOpenAIClient();
     const completion = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
-        { role: "system", content: SYSTEM_PROMPT },
+        { role: "system", content: GRAPHIC_SYSTEM_PROMPT },
         { role: "user", content: userMessage },
       ],
-      temperature: 0.7,
+      temperature: 0.3,
       response_format: { type: "json_object" },
     });
 
@@ -43,11 +39,11 @@ ${body.preferences ? `- 指導者からの要望: ${body.preferences}` : ""}
       throw new Error("AIからの応答がありませんでした");
     }
 
-    const parsed: GenerateResponse = JSON.parse(content);
+    const parsed: GenerateGraphicResponse = JSON.parse(content);
 
     return NextResponse.json(parsed);
   } catch (error) {
-    console.error("Error generating training plan:", error);
+    console.error("Error generating graphic:", error);
 
     // OpenAI API のエラーハンドリング
     if (error instanceof Error) {
@@ -60,7 +56,7 @@ ${body.preferences ? `- 指導者からの要望: ${body.preferences}` : ""}
     }
 
     return NextResponse.json(
-      { error: "練習メニューの生成に失敗しました。もう一度お試しください。" },
+      { error: "図解の生成に失敗しました。もう一度お試しください。" },
       { status: 500 }
     );
   }

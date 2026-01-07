@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { TrainingProposal, TrainingInput } from "@/lib/types";
+import { TrainingMenuInput, GraphicData } from "@/lib/types";
 
 // react-pdfはSSRで問題があるため、動的インポートでクライアントのみでレンダリング
 const PDFDownloadLink = dynamic(
@@ -12,35 +12,33 @@ const PDFDownloadLink = dynamic(
 const TrainingPDF = dynamic(() => import("./TrainingPDF"), { ssr: false });
 
 interface PDFDownloadButtonProps {
-  proposal: TrainingProposal;
-  inputData: TrainingInput;
-  onComplete?: () => void;
+  input: TrainingMenuInput;
+  graphic: GraphicData;
 }
 
 export default function PDFDownloadButton({
-  proposal,
-  inputData,
-  onComplete,
+  input,
+  graphic,
 }: PDFDownloadButtonProps) {
-  const fileName = `練習メニュー_${inputData.date}_${proposal.title.replace(/\s/g, "_")}.pdf`;
+  const fileName = `練習メニュー_${input.title.replace(/\s/g, "_")}.pdf`;
 
   return (
     <PDFDownloadLink
-      document={<TrainingPDF proposal={proposal} inputData={inputData} />}
+      document={<TrainingPDF input={input} graphic={graphic} />}
       fileName={fileName}
     >
       {({ loading, error }) => {
         if (error) {
           return (
             <span className="text-red-600">
-              PDF生成エラー: {error.message}
+              PDF生成エラー
             </span>
           );
         }
 
         if (loading) {
           return (
-            <span className="inline-flex items-center gap-2">
+            <span className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg">
               <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
                 <circle
                   className="opacity-25"
@@ -63,10 +61,7 @@ export default function PDFDownloadButton({
         }
 
         return (
-          <span
-            className="inline-flex items-center gap-2"
-            onClick={() => onComplete?.()}
-          >
+          <span className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg cursor-pointer transition-colors">
             <svg
               className="w-5 h-5"
               fill="none"
