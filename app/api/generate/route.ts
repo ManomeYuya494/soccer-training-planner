@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getOpenAIClient, GRAPHIC_SYSTEM_PROMPT } from "@/lib/openai";
+import { getAnthropicClient, GRAPHIC_SYSTEM_PROMPT } from "@/lib/anthropic";
 import { TrainingMenuInput, GenerateGraphicResponse } from "@/lib/types";
 
 export async function POST(request: NextRequest) {
@@ -22,35 +22,47 @@ ${body.graphicDescription}
 上記の説明に基づいて、選手の配置、マーカー、矢印などの情報をJSON形式で出力してください。
 `;
 
-    const openai = getOpenAIClient();
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
+    const anthropic = getAnthropicClient();
+    const response = await anthropic.messages.create({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 2048,
       messages: [
-        { role: "system", content: GRAPHIC_SYSTEM_PROMPT },
-        { role: "user", content: userMessage },
+        {
+          role: "user",
+          content: `${GRAPHIC_SYSTEM_PROMPT}\n\n${userMessage}`,
+        },
       ],
-      temperature: 0.3,
-      response_format: { type: "json_object" },
     });
 
-    const content = completion.choices[0]?.message?.content;
-
-    if (!content) {
+    const content = response.content[0];
+    if (content.type !== "text") {
       throw new Error("AIからの応答がありませんでした");
     }
 
-    const parsed: GenerateGraphicResponse = JSON.parse(content);
+    // JSONを抽出（マークダウンのコードブロックがある場合も対応）
+    let jsonText = content.text;
+    const jsonMatch = jsonText.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (jsonMatch) {
+      jsonText = jsonMatch[1].trim();
+    }
+
+    const parsed: GenerateGraphicResponse = JSON.parse(jsonText);
 
     return NextResponse.json(parsed);
   } catch (error) {
     console.error("Error generating graphic:", error);
 
-    // OpenAI API のエラーハンドリング
     if (error instanceof Error) {
-      if (error.message.includes("API key")) {
+      if (error.message.includes("API key") || error.message.includes("api_key")) {
         return NextResponse.json(
-          { error: "APIキーが設定されていないか無効です" },
+          { error: "Anthropic APIキーが設定されていないか無効です" },
           { status: 401 }
+        );
+      }
+      if (error.message.includes("rate_limit")) {
+        return NextResponse.json(
+          { error: "APIのレート制限に達しました。しばらく待ってから再試行してください。" },
+          { status: 429 }
         );
       }
     }

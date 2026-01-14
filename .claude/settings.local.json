@@ -4,7 +4,16 @@
       "Bash(npx create-next-app@latest:*)",
       "Bash(node --version:*)",
       "Bash(brew list:*)",
-      "Bash(/usr/local/Cellar/node@20/*/bin/node)"
+      "Bash(/usr/local/Cellar/node@20/*/bin/node)",
+      "Bash(PATH=\"/usr/local/opt/node@20/bin:$PATH\" npm run dev:*)",
+      "Bash(curl:*)",
+      "Bash(npm run dev:*)",
+      "Bash(/usr/local/Cellar/node@20/20.18.0/bin/npm run dev)",
+      "Bash(ls:*)",
+      "Bash(/usr/local/Cellar/node@20/20.19.6/bin/npm run dev)",
+      "Bash(PATH=\"/usr/local/Cellar/node@20/20.19.6/bin:$PATH\" npm run dev:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: Gemini AI統合と図解編集機能の大幅強化\n\n- Gemini API統合による自然言語からの練習メニュー抽出\n- 矢印（移動/パス/ドリブル）の追加・編集・削除機能\n- サイズ表記（dimensionLabels）の図解内表示\n- オーガナイズの時間詳細化（トータル時間/1回の時間）\n- 備考フィールド追加（ルールや運営の細かい点用）\n- ドラッグ＆ドロップによる要素編集\n- AIプロンプト最適化（配置指示の再現性向上）\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
     ]
   }
 }
